@@ -1,0 +1,91 @@
+NOTES ON DICTIONARIES
+================================
+
+Principal Use Cases for Dictionaries
+------------------------------------
+
+Passing keyword arguments
+    Typically, one read and one write for 1 to 3 elements.
+    Occurs frequently in normal python code.
+
+Class method lookup
+    Dictionaries vary in size with 8 to 16 elements being common.
+    Usually written once with many lookups.
+    When base classes are used, there are many failed lookups
+        followed by a lookup in a base class.
+
+Instance attribute lookup and Global variables
+    Dictionaries vary in size.  4 to 10 elements are common.
+    Both reads and writes are common.
+
+Builtins
+    Frequent reads.  Almost never written.
+    About 150 interned strings (as of Py3.3).
+    A few keys are accessed much more frequently than others.
+
+Uniquification
+    Dictionaries of any size.  Bulk of work is in creation.
+    Repeated writes to a smaller set of keys.
+    Single read of each key.
+    Some use cases have two consecutive accesses to the same key.
+
+    * Removing duplicates from a sequence.
+        dict.fromkeys(seqn).keys()
+
+    * Counting elements in a sequence.
+        for e in seqn:
+          d[e] = d.get(e,0) + 1
+
+    * Accumulating references in a dictionary of lists:
+
+        for pagenumber, page in enumerate(pages):
+          for word in page:
+            d.setdefault(word, []).append(pagenumber)
+
+    Note, the second example is a use case characterized by a get and set
+    to the same key.  There are similar use cases with a __contains__
+    followed by a get, set, or del to the same key.  Part of the
+    justification for d.setdefault is combining the two lookups into one.
+
+Membership Testing
+    Dictionaries of any size.  Created once and then rarely changes.
+    Single write to each key.
+    Many calls to __contains__() or has_key().
+    Similar access patterns occur with replacement dictionaries
+        such as with the % formatting operator.
+
+Dynamic Mappings
+    Characterized by deletions interspersed with adds and replacements.
+    Performance benefits greatly from the re-use of dummy entries.
+
+Data Layout
+-----------
+
+Dictionaries are composed of 3 components:
+The dictobject struct itself
+A dict-keys object (keys & hashes)
+A values array
+
+
+Tunable Dictionary Parameters
+-----------------------------
+
+See comments for PyDict_MINSIZE, USABLE_FRACTION and GROWTH_RATE in
+dictobject.c
+
+Tune-ups should be measured across a broad range of applications and
+use cases.  A change to any parameter will help in some situations and
+hurt in others.  The key is to find settings that help the most common
+cases and do the least damage to the less common cases.  Results will
+vary dramatically depending on the exact number of keys, whether the
+keys are all strings, whether reads or writes dominate, the exact
+hash values of the keys (some sets of values have fewer collisions than
+others).  Any one test or benchmark is likely to prove misleading.
+
+While making a dictionary more sparse reduces collisions, it impairs
+iteration and key listing.  Those methods loop over every potential
+entry.  Doubling the size of dictionary results in twice as many
+non-overlappi
+always be in a different cache line from the key.
+
+
